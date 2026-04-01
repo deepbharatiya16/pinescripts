@@ -1,0 +1,72 @@
+//@version=5
+indicator("Customizable 3 EMA with RVOL & Weighted RS Rating", overlay=true)
+
+// User input for EMA lengths
+emaLength1 = input(9, title="EMA 1 Length")
+emaLength2 = input(21, title="EMA 2 Length")
+emaLength3 = input(50, title="EMA 3 Length")
+
+// Calculating EMAs
+ema1 = ta.ema(close, emaLength1)
+ema2 = ta.ema(close, emaLength2)
+ema3 = ta.ema(close, emaLength3)
+
+// Plotting EMAs
+plot(ema1, title="EMA 1", color=color.blue, linewidth=2)
+plot(ema2, title="EMA 2", color=color.orange, linewidth=2)
+plot(ema3, title="EMA 3", color=color.green, linewidth=2)
+
+// Calculate Relative Volume (RVOL)
+rvolLength = input(20, title="RVOL Length")
+avgVolume = ta.sma(volume, rvolLength)
+rvol = (volume / avgVolume)*100
+
+// Calculate benchmark performances (optional comparison)
+showBenchmark = input(true, title="Compare to Benchmark")
+indexTicker = input.symbol("SPY", title="Benchmark Index")
+indexData = request.security(indexTicker, timeframe.period, close)
+
+// Calculate performances for different timeframes
+// For 3, 6, 9, and 12 months
+daysInMonth = 21 // Approximate trading days in a month
+p3Months = ((close - close[3 * daysInMonth]) / close[3 * daysInMonth]) * 100
+p6Months = ((close - close[6 * daysInMonth]) / close[6 * daysInMonth]) * 100
+p9Months = ((close - close[9 * daysInMonth]) / close[9 * daysInMonth]) * 100
+p12Months = ((close - close[12 * daysInMonth]) / close[12 * daysInMonth]) * 100
+
+// Calculate benchmark performances for comparison
+benchP3Months = ((indexData - indexData[3 * daysInMonth]) / indexData[3 * daysInMonth]) * 100
+benchP6Months = ((indexData - indexData[6 * daysInMonth]) / indexData[6 * daysInMonth]) * 100
+benchP9Months = ((indexData - indexData[9 * daysInMonth]) / indexData[9 * daysInMonth]) * 100
+benchP12Months = ((indexData - indexData[12 * daysInMonth]) / indexData[12 * daysInMonth]) * 100
+
+// Calculate RS Score using the weighted formula:
+// RS Score = 40% * P3 + 20% * P6 + 20% * P9 + 20% * P12
+rsScore = (0.4 * p3Months) + (0.2 * p6Months) + (0.2 * p9Months) + (0.2 * p12Months)
+
+// Calculate benchmark score for comparison
+benchScore = (0.4 * benchP3Months) + (0.2 * benchP6Months) + (0.2 * benchP9Months) + (0.2 * benchP12Months)
+
+
+// Convert to 0-100 scale for RS Rating
+// Base score on absolute performance and relative performance
+rsRating = math.max(1, math.min(99, 50 + (rsScore > 0 ? rsScore : rsScore * 0.5)))
+
+// Create a table and display EMA values, RVOL & RS Rating in the top right corner
+table emaTable = table.new(position=position.top_right, columns=2, rows=5, border_width=1)
+
+// Color coding for RS Rating
+rsColor = rsRating >= 80 ? color.green : rsRating >= 50 ? color.orange : color.red
+
+// Fill table with EMA values, RVOL & RS Rating
+if bar_index == last_bar_index
+    table.cell(emaTable, 0, 0, "EMA " + str.tostring(emaLength1), text_color=color.blue)
+    table.cell(emaTable, 1, 0, str.tostring(ema1,'#.##'), text_color=color.blue)
+    table.cell(emaTable, 0, 1, "EMA " + str.tostring(emaLength2), text_color=color.orange)
+    table.cell(emaTable, 1, 1, str.tostring(ema2,'#.##'), text_color=color.orange)
+    table.cell(emaTable, 0, 2, "EMA " + str.tostring(emaLength3), text_color=color.green)
+    table.cell(emaTable, 1, 2, str.tostring(ema3,'#.##'), text_color=color.green)
+    table.cell(emaTable, 0, 3, "RVOL", text_color=color.purple)
+    table.cell(emaTable, 1, 3, str.tostring(rvol, '#.##') + "%", text_color=color.purple)
+    table.cell(emaTable, 0, 4, "RS Rating", text_color=rsColor)
+    table.cell(emaTable, 1, 4, str.tostring(math.round(rsRating)) + "/100", text_color=rsColor)

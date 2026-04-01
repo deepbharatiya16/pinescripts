@@ -1,0 +1,56 @@
+//@version=6
+indicator("Chartink Multi-Condition Screener", overlay=true)
+
+// Input parameters
+adx_length = input.int(14, "ADX Length", minval=1)
+ema_10_length = input.int(10, "EMA 10 Length", minval=1)
+ema_20_length = input.int(20, "EMA 20 Length", minval=1)
+ema_50_length = input.int(50, "EMA 50 Length", minval=1)
+rsi_length = input.int(14, "RSI Length", minval=1)
+sma_50_length = input.int(50, "SMA 50 Length", minval=1)
+volume_sma_length = input.int(20, "Volume SMA Length", minval=1)
+min_Turnover = input.int(500000000, "Minimum Turnover", minval=1)
+min_adx = input.int(10, "Minimum ADX", minval=1)
+min_rsi = input.int(59, "Minimum RSI", minval=1)
+
+// Calculate technical indicators
+[diplus, diminus, adx] = ta.dmi(adx_length, adx_length)
+ema_10 = ta.ema(close, ema_10_length)
+ema_20 = ta.ema(close, ema_20_length)
+ema_50 = ta.ema(close, ema_50_length)
+rsi = ta.rsi(close, rsi_length)
+sma_50 = ta.sma(close, sma_50_length)
+volume_sma = ta.sma(volume, volume_sma_length)
+
+// Get previous values for comparison
+adx_prev = adx[1]
+sma_50_prev = sma_50[1]
+sma_50_2days = sma_50[2]
+sma_50_3days = sma_50[3]
+sma_50_4days = sma_50[4]
+sma_50_5days = sma_50[5]
+
+// Define all conditions
+cond1 = adx >= min_adx and adx_prev >= min_adx  // ADX DI Positive for current and previous day
+cond2 = close*volume >= min_Turnover  // Volume greater than 500M
+cond3 = ema_10 >= ema_20  // EMA(10) >= EMA(20)
+cond4 = ema_20 >= ema_50  // EMA(20) >= EMA(50)
+cond5 = rsi >= min_rsi  // RSI >= 59
+cond6 = sma_50 > sma_50_prev  // Current SMA(50) > Previous SMA(50)
+cond7 = sma_50_prev > sma_50_2days  // 1 day ago SMA(50) > 2 days ago SMA(50)
+cond8 = sma_50_2days > sma_50_3days  // 2 days ago SMA(50) > 3 days ago SMA(50)
+cond9 = sma_50_3days > sma_50_4days  // 3 days ago SMA(50) > 4 days ago SMA(50)
+cond10 = sma_50_4days > sma_50_5days  // 4 days ago SMA(50) > 5 days ago SMA(50)
+cond11 = volume > volume_sma * 1 // Volume > Volume SMA(20)
+
+// Combine all conditions
+all_conditions_met = cond1 and cond2 and cond3 and cond4 and cond5 and cond6 and cond7 and cond8 and cond9 and cond10 and cond11
+
+// Visual indicators
+plotshape(all_conditions_met, style=shape.triangleup, location=location.belowbar, color=color.green, size=size.small, title="All Conditions Met")
+
+// Plot EMAs for reference
+plot(ema_10, color=color.blue, title="EMA 10", linewidth=1)
+plot(ema_20, color=color.orange, title="EMA 20", linewidth=1)
+plot(ema_50, color=color.red, title="EMA 50", linewidth=1)
+plot(sma_50, color=color.purple, title="SMA 50", linewidth=2)
