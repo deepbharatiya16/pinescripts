@@ -1,0 +1,28 @@
+//@version=5
+indicator("Volume, Avg Volume & RVOL", overlay=false)
+
+// === INPUTS ===
+avgLength = input.int(20, title="Average Volume Period", minval=1)
+
+// === CALCULATIONS ===
+vol = volume
+avgVol = ta.sma(vol, avgLength)
+rvol = avgVol != 0 ? vol / avgVol : na
+
+// Convert to Crores and Percentage
+volCr = vol / 1e7
+avgVolCr = avgVol / 1e7
+rvolPct = rvol * 100
+
+// === PLOTS ===
+plot(vol, title="Volume", color=color.blue, style=plot.style_columns)
+plot(avgVol, title="Average Volume", color=color.orange, linewidth=2)
+
+// === PLOT RVOL AS HISTOGRAM ===
+plot(rvolPct, title="RVOL %", color=color.red, linewidth=2, style=plot.style_columns)
+
+// === OPTIONAL: LABEL ONLY FOR TODAY ===
+isToday = (bar_index == ta.highest(bar_index, 1))
+if isToday
+    label.new(x=bar_index, y=high * 1.05,text="RVOL Today: " + str.tostring(rvolPct, "#.##") + "%",style=label.style_label_right,textcolor=color.white, color=color.red,xloc=xloc.bar_index, yloc=yloc.price)
+
