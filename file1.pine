@@ -1,0 +1,47 @@
+//@version=6
+indicator("Green Buy Arrow - Chartink Conditions", overlay=true)
+
+// === INPUT PARAMETERS ===
+adxLen = input.int(5, title="ADX Length")
+diThreshold = input.float(10, title="Previous +DI >")
+rsiWeeklyThreshold = input.float(59, title="Weekly RSI >=")
+volumeValueThreshold = input.float(50000000, title="Close * Volume Threshold")
+
+// === +DI Calculation ===
+[diplus, diminus, adxLine] = ta.dmi(adxLen, adxLen)
+diPlusToday = diplus
+diPlusPrev = diplus[1]
+
+// === EMA Calculations ===
+ema10 = ta.ema(close, 10)
+ema20 = ta.ema(close, 20)
+ema50 = ta.ema(close, 50)
+// Plot EMAs for reference
+plot(ema10, color=color.blue, title="EMA 10", linewidth=1)
+plot(ema20, color=color.orange, title="EMA 20", linewidth=1)
+plot(ema50, color=color.red, title="EMA 50", linewidth=1)
+
+// === SMA(50) Trend Up 5 Days ===
+sma50 = ta.sma(close, 50)
+smaTrendUp = sma50 > sma50[1] and sma50[1] > sma50[2] and sma50[2] > sma50[3] and sma50[3] > sma50[4] and sma50[4] > sma50[5]
+
+// === Weekly RSI(14) ===
+rsiWeekly = request.security(syminfo.tickerid, "W", ta.rsi(close, 14))
+
+// === Volume Spike Check ===
+volumeSma20 = ta.sma(volume, 20)
+
+// === ALL CONDITIONS ===
+cond1 = diPlusToday - diPlusPrev >= diThreshold
+cond3 = close * volume > volumeValueThreshold
+cond4 = ema10 > ema20
+cond5 = ema20 > ema50
+cond6 = rsiWeekly >= rsiWeeklyThreshold
+cond7 = smaTrendUp
+cond8 = volume > volumeSma20 * 1
+
+// === FINAL BUY SIGNAL ===
+buySignal = cond1 and cond3 and cond4 and cond5 and cond6 and cond7 and cond8
+
+// === PLOT GREEN ARROW ===
+plotshape(buySignal, title="Buy ARROW", location=location.belowbar, text = "BUY",textcolor = color.green,color=color.green, style=shape.triangleup, size=size.small)
